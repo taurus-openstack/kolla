@@ -138,8 +138,9 @@ elif hostarch == 'x86_64':
     debianarch = 'amd64'
 
 # NOTE: Apple Silicon reports as arm64 which is aarch64
-if hostarch == "arm64":
-    hostarch = "aarch64"
+if hostarch == 'arm64':
+    hostarch = 'aarch64'
+    debianarch = 'arm64'
 
 _CLI_OPTS = [
     cfg.StrOpt('base', short='b', default='rocky',

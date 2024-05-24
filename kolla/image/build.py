@@ -114,7 +114,8 @@ def run_build():
         try:
             import docker
             import packaging
-            packaging.version.parse(docker.__version__)
+            print(docker.__version__)
+            # packaging.version.parse(docker.__version__)
         except ImportError:
             LOG.error("Error, you have set Docker as container engine, "
                       "but the Python library is not found."
