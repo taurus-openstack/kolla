@@ -190,7 +190,7 @@ class BuildTask(EngineTask):
         if source.get('type') == 'url':
             self.logger.debug("Getting archive from %s", source['source'])
             try:
-                r = requests.get(source['source'], timeout=self.conf.timeout)
+                r = requests.get(source['source'], timeout=self.conf.timeout, verify=False)
             except requests_exc.Timeout:
                 self.logger.exception(
                     'Request timed out while getting archive from %s',
