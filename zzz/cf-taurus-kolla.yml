@@ -1,32 +1,42 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Taurus Kolla CloudFormation template
+
 Resources:
   Project:
     Type: AWS::CodeBuild::Project
     Properties:
+      Name: taurus-openstack-kolla
       Source:
-        Type: <String>
-      Artifacts:
-        Type: <String>
-      ServiceRole: <String>
+        Auth:
+          Type: OAUTH
+        Type: GITHUB
+        Location: https://github.com/taurus-openstack/kolla.git
+        GitCloneDepth: 1
+        BuildSpec: zzz/buildspec.yml
       Environment:
-        Type: <String>
-        Image: <String>
-        ComputeType: <String>
-  Pipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      RoleArn: <String>
-      Stages:
-        - Actions:
-            - ActionTypeId:
-                Category: <String>
-                Owner: <String>
-                Provider: <String>
-                Version: <String>
-              Name: <String>
-          Name: <String>
-  Role:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument: <Json>
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:7.0
+        ComputeType: BUILD_GENERAL1_LARGE
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: OS_PROJECT
+            Type: PLAINTEXT
+            Value: ''
+          - Name: OS_RELEASE
+            Type: PLAINTEXT
+            Value: ''
+          - Name: OS_CUSTOM_TAG
+            Type: PLAINTEXT
+            Value: ''
+      TimeoutInMinutes: 120
+      Cache:
+        Modes:
+          - LOCAL_DOCKER_LAYER_CACHE
+          - LOCAL_SOURCE_CACHE
+        Type: LOCAL
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+      Artifacts:
+        Type: NO_ARTIFACTS
+      ServiceRole: arn:aws:iam::664311806486:role/service-role/codebuild-taurus-kolla-service-role
