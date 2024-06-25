@@ -27,7 +27,7 @@ phases:
             --registry="" \
             --namespace=$OS_REGISTRY_NAMESPACE \
             --tag=$PUSH_TAG \
-            --skip-existing
+            --skip-parent
   post_build:
     commands:
       - echo "Push and remove untagged images"
