@@ -13,7 +13,7 @@ phases:
       - PUSH_TAG=$OS_RELEASE-$OS_CUSTOM_TAG
   build:
     commands:
-      - python3 ./zzz/openstack_infra.py get-images $OS_INFRA_CATEGORY
+      - python3 ./zzz/openstack_infra.py desc $OS_INFRA_CATEGORY
       - echo "Retrieve image list using openstack_infra.py"
       - IMAGE_LIST=$(python3 ./zzz/openstack_infra.py get-images $OS_INFRA_CATEGORY)
       - echo "Pulling images..."
