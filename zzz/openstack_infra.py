@@ -44,7 +44,7 @@ IMAGES = {
   'mariadb': {
     'category': 'mariadb for database',
     'list': [
-      'mariadb',
+      'mariadb-server',
       'mariadb-clustercheck',
     ],
   },
