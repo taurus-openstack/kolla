@@ -27,7 +27,7 @@ phases:
       - >
         docker images --format '{{.Repository}}:{{.Tag}}' | grep $PULL_TAG | while read -r image; do
             
-            repo_name="${image%:*}"  # Extract repository name
+            repo_name=$(echo ${image##*/} | cut -d':' -f1)  # Extract repository name
             if ! aws ecr-public describe-repositories --repository-names "$repo_name" --region us-east-1 > /dev/null 2>&1; then
                 echo "Repository $repo_name does not exist. Creating..."
                 aws ecr-public create-repository --repository-name "$repo_name" --region us-east-1
@@ -56,4 +56,4 @@ phases:
             fi
         done
       - echo "Confirm kolla images"
-      - docker images --format "{{.ID}}\t{{.Size}}\t{{.Repository}}" | sort -k 2 -h
+      - docker images --format "{{.Tag}}\t{{.Size}}\t{{.Repository}}" | sort -k 2 -h
