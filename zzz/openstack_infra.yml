@@ -19,16 +19,12 @@ phases:
       - >
         for image in $IMAGE_LIST; do
           docker pull quay.io/openstack.kolla/$image:$PULL_TAG
-          docker tag quay.io/openstack.kolla/$image:$PULL_TAG $OS_REGISTRY_URL_NAMESPACE/$image:$PUSH_TAG
-          docker push $OS_REGISTRY_URL_NAMESPACE/$image:$PUSH_TAG
-          docker tag quay.io/openstack.kolla/$image:$PULL_TAG $OS_REGISTRY_URL_NAMESPACE/$image:latest
-          docker push $OS_REGISTRY_URL_NAMESPACE/$image:latest
         done
   post_build:
     commands:
       - echo "Removing untagged images"
       - >
-        docker images --format '{{.Repository}}:{{.Tag}}' | grep $PUSH_TAG | grep -v $OS_REGISTRY_URL | while read -r image; do
+        docker images --format '{{.Repository}}:{{.Tag}}' | grep $PUSH_TAG | grep -v "quay.io" | while read -r image; do
             
             repo_name="${image%:*}"  # Extract repository name
             if ! aws ecr-public describe-repositories --repository-names "$repo_name" --region us-east-1 > /dev/null 2>&1; then
@@ -37,6 +33,14 @@ phases:
             else
                 echo "Repository $repo_name already exists."
             fi
+
+            image_version="$OS_REGISTRY_URL_NAMESPACE/$repo_name"
+            docker tag "$image" "$image_version"
+            docker push "$image_version"
+            
+            image_latest="$OS_REGISTRY_URL_NAMESPACE/$repo_name:latest"
+            docker tag "$image" "$image_latest"
+            docker push "$image_latest"
             
             image_list=$(aws ecr-public describe-images \
               --repository-name $repo_name \
