@@ -112,35 +112,36 @@ parser.add_argument('command', type=str, help="Command to execute ('desc' or 'ge
 parser.add_argument('key_name', type=str, help="The key name (e.g., 'prometheus', 'rabbitmq', 'redis', 'opensearch')")
 args = parser.parse_args()
 
+def print_category_details(key, category, images_list):
+    print(f"{'-'*40}\nCategory '{key}': {category}\n{'-'*40}\nList of Images:")
+    for image in images_list:
+        print(f"- {image}")
+    print(f"{'-'*40}\nTotal images count for '{key}': {len(images_list)}\n{'-'*40}")
+
+def print_images(images_list):
+    for image in images_list:
+        print(image)
+
+def handle_desc_command(key_name):
+    if key_name == 'all':
+        for key, details in IMAGES.items():
+            print_category_details(key, details['category'], details['list'])
+    elif key_name in IMAGES:
+        details = IMAGES[key_name]
+        print_category_details(key_name, details['category'], details['list'])
+    else:
+        print(f"Key '{key_name}' not found.")
+
+def handle_get_images_command(key_name):
+    if key_name == 'all':
+        for details in IMAGES.values():
+            print_images(details['list'])
+    elif key_name in IMAGES:
+        print_images(IMAGES[key_name]['list'])
+    else:
+        print(f"Key '{key_name}' not found.")
+
 if args.command == 'desc':
-    if args.key_name in IMAGES:
-        category = IMAGES[args.key_name]['category']
-        images_list = IMAGES[args.key_name]['list']
-        total_images = len(images_list)
-
-        print(f"{'-'*40}")
-        print(f"Category '{args.key_name}': {category}")
-        print(f"{'-'*40}")
-        
-        print("List of Images:")
-        for image in images_list:
-            print(f"- {image}")
-        
-        print(f"{'-'*40}")
-        print(f"Total images count for '{args.key_name}': {total_images}")
-        print(f"{'-'*40}")
-    else:
-        print(f"Key '{args.key_name}' not found.")
-
+    handle_desc_command(args.key_name)
 elif args.command == 'get-images':
-    if args.key_name == 'all':
-        for key in IMAGES:
-            images_list = IMAGES[key]['list']
-            for image in images_list:
-                print(image)
-    elif args.key_name in IMAGES:
-        images_list = IMAGES[args.key_name]['list']
-        for image in images_list:
-            print(image)
-    else:
-        print(f"Key '{args.key_name}' not found.")
+    handle_get_images_command(args.key_name)
