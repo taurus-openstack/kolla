@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Taurus Kolla Openstack Infra CloudFormation template
+
+Resources:
+  Project:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: taurus-openstack-kolla-infra
+      Source:
+        Auth:
+          Type: OAUTH
+        Type: GITHUB
+        Location: https://github.com/taurus-openstack/kolla.git
+        GitCloneDepth: 1
+        BuildSpec: zzz/openstack_infra.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:7.0
+        ComputeType: BUILD_GENERAL1_LARGE
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: OS_INFRA_CATEGORY
+            Type: PLAINTEXT
+            Value: 'all'
+          - Name: OS_RELEASE
+            Type: PLAINTEXT
+            Value: '2024.1'
+          - Name: OS_RELEASE_TAG
+            Type: PLAINTEXT
+            Value: 'ubuntu-jammy'
+          - Name: OS_CUSTOM_TAG
+            Type: PLAINTEXT
+            Value: 'taurus'
+      TimeoutInMinutes: 120
+      Cache:
+        Modes:
+          - LOCAL_DOCKER_LAYER_CACHE
+          - LOCAL_SOURCE_CACHE
+        Type: LOCAL
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+      Artifacts:
+        Type: NO_ARTIFACTS
+      ServiceRole: !Ref Role
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: codebuild-taurus-openstack-kolla-infra-role
+      AssumeRolePolicyDocument: {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Effect": "Allow",
+                  "Principal": {
+                      "Service": "codebuild.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+              }
+          ]
+      }
+      Policies: 
+      - PolicyName: AmazonEC2ContainerRegistryPowerUser
+        PolicyDocument: {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "ecr:GetAuthorizationToken",
+                        "ecr:BatchCheckLayerAvailability",
+                        "ecr:GetDownloadUrlForLayer",
+                        "ecr:GetRepositoryPolicy",
+                        "ecr:DescribeRepositories",
+                        "ecr:ListImages",
+                        "ecr:DescribeImages",
+                        "ecr:BatchGetImage",
+                        "ecr:GetLifecyclePolicy",
+                        "ecr:GetLifecyclePolicyPreview",
+                        "ecr:ListTagsForResource",
+                        "ecr:DescribeImageScanFindings",
+                        "ecr:InitiateLayerUpload",
+                        "ecr:UploadLayerPart",
+                        "ecr:CompleteLayerUpload",
+                        "ecr:PutImage"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        }
+      - PolicyName: AmazonElasticContainerRegistryPublicFullAccess
+        PolicyDocument: {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "ecr-public:*",
+                        "sts:GetServiceBearerToken"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        }
+      - PolicyName: AmazonElasticContainerRegistryPublicPowerUser
+        PolicyDocument: {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "ecr-public:GetAuthorizationToken",
+                        "sts:GetServiceBearerToken",
+                        "ecr-public:BatchCheckLayerAvailability",
+                        "ecr-public:GetRepositoryPolicy",
+                        "ecr-public:DescribeRepositories",
+                        "ecr-public:DescribeRegistries",
+                        "ecr-public:DescribeImages",
+                        "ecr-public:DescribeImageTags",
+                        "ecr-public:GetRepositoryCatalogData",
+                        "ecr-public:GetRegistryCatalogData",
+                        "ecr-public:InitiateLayerUpload",
+                        "ecr-public:UploadLayerPart",
+                        "ecr-public:CompleteLayerUpload",
+                        "ecr-public:PutImage"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        }
+      - PolicyName: CodeBuildBasePolicy-taurus-openstack-kolla-infra-ap-northeast-2
+        PolicyDocument: {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Resource": [
+                        "arn:aws:logs:ap-northeast-2:664311806486:log-group:/aws/codebuild/taurus-openstack-kolla-infra",
+                        "arn:aws:logs:ap-northeast-2:664311806486:log-group:/aws/codebuild/taurus-openstack-kolla-infra:*"
+                    ],
+                    "Action": [
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ]
+                },
+                {
+                    "Effect": "Allow",
+                    "Resource": [
+                        "arn:aws:s3:::codepipeline-ap-northeast-2-*"
+                    ],
+                    "Action": [
+                        "s3:PutObject",
+                        "s3:GetObject",
+                        "s3:GetObjectVersion",
+                        "s3:GetBucketAcl",
+                        "s3:GetBucketLocation"
+                    ]
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "codebuild:CreateReportGroup",
+                        "codebuild:CreateReport",
+                        "codebuild:UpdateReport",
+                        "codebuild:BatchPutTestCases",
+                        "codebuild:BatchPutCodeCoverages"
+                    ],
+                    "Resource": [
+                        "arn:aws:codebuild:ap-northeast-2:664311806486:report-group/taurus-openstack-kolla-infra-*"
+                    ]
+                }
+            ]
+        }
+      - PolicyName: CodeBuildCachePolicy-taurus-openstack-kolla-infra-ap-northeast-2
+        PolicyDocument: {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:PutObject",
+                        "s3:GetObject",
+                        "s3:GetBucketAcl",
+                        "s3:GetBucketLocation"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::codepipeline-ap-northeast-2-344500761626",
+                        "arn:aws:s3:::codepipeline-ap-northeast-2-344500761626/*"
+                    ]
+                }
+            ]
+        }
+      - PolicyName: GithubPullAccess
+        PolicyDocument: {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": "codestar-connections:UseConnection",
+                    "Resource": "arn:aws:codestar-connections:ap-northeast-2:664311806486:connection/a1db1898-ac72-41e1-9470-19673f910007"
+                }
+            ]
+        }

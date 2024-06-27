@@ -1,0 +1,54 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Check versions and ecr login"
+      - docker --version
+      - OS_REGISTRY_URL=public.ecr.aws/p6g9k8e4
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $OS_REGISTRY_URL
+      - OS_REGISTRY_NAMESPACE=taurus-kolla
+      - OS_REGISTRY_URL_NAMESPACE=$OS_REGISTRY_URL/$OS_REGISTRY_NAMESPACE
+      - PULL_TAG=$OS_RELEASE-$OS_RELEASE_TAG
+      - PUSH_TAG=$OS_RELEASE-$OS_CUSTOM_TAG
+  build:
+    commands:
+      - echo "Retrieve image list using openstack_infra.py"
+      - IMAGE_LIST=$(python3 ./zzz/openstack_infra.py get-images $OS_INFRA_CATEGORY)
+      - echo "Pulling images..."
+      - >
+        for image in $IMAGE_LIST; do
+          docker pull quay.io/openstack.kolla/$image:$PULL_TAG
+          docker tag quay.io/openstack.kolla/$image:$PULL_TAG $OS_REGISTRY_URL_NAMESPACE/$image:$PUSH_TAG
+          docker push $OS_REGISTRY_URL_NAMESPACE/$image:$PUSH_TAG
+          docker tag quay.io/openstack.kolla/$image:$PULL_TAG $OS_REGISTRY_URL_NAMESPACE/$image:latest
+          docker push $OS_REGISTRY_URL_NAMESPACE/$image:latest
+        done
+  post_build:
+    commands:
+      - echo "Removing untagged images"
+      - >
+        docker images --format '{{.Repository}}:{{.Tag}}' | grep $PUSH_TAG | grep -v $OS_REGISTRY_URL | while read -r image; do
+            
+            repo_name="${image%:*}"  # Extract repository name
+            if ! aws ecr-public describe-repositories --repository-names "$repo_name" --region us-east-1 > /dev/null 2>&1; then
+                echo "Repository $repo_name does not exist. Creating..."
+                aws ecr-public create-repository --repository-name "$repo_name" --region us-east-1
+            else
+                echo "Repository $repo_name already exists."
+            fi
+            
+            image_list=$(aws ecr-public describe-images \
+              --repository-name $repo_name \
+              --region us-east-1 | jq -c .imageDetails)
+            
+            untagged_images=$(echo "$image_list" | jq -c 'map(select(has("imageTags") | not))')
+
+            target_digests=$(echo "$untagged_images" | jq -r '[.[] | {imageDigest}] | .[] | @text "imageDigest=\(.imageDigest)"')
+            
+            if [ -n "$target_digests" ]; then
+                aws ecr-public batch-delete-image --repository-name "$repo_name" --image-ids $target_digests --region us-east-1
+            fi
+        done
+      - echo "Confirm kolla images"
+      - docker images
