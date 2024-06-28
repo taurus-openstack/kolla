@@ -15,6 +15,7 @@ phases:
       - jq --version
       - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $OS_REGISTRY_URL
       - OS_REGISTRY_NAMESPACE=taurus-kolla
+      - export OS_CUSTOM_TAG=ubuntu-jammy
       - PUSH_TAG=$OS_RELEASE-$OS_CUSTOM_TAG
   build:
     commands:
