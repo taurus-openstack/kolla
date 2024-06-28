@@ -6,9 +6,8 @@ phases:
       - echo "Check versions and ecr login"
       - docker --version
       - OS_REGISTRY_URL=public.ecr.aws/p6g9k8e4
-      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $OS_REGISTRY_URL
       - OS_REGISTRY_NAMESPACE=taurus-kolla
-      - OS_REGISTRY_URL_NAMESPACE=$OS_REGISTRY_URL/$OS_REGISTRY_NAMESPACE
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $OS_REGISTRY_URL
       - PULL_TAG=$OS_RELEASE-$OS_RELEASE_TAG
       - PUSH_TAG=$OS_RELEASE-$OS_CUSTOM_TAG
   build:
@@ -27,7 +26,7 @@ phases:
       - >
         docker images --format '{{.Repository}}:{{.Tag}}' | grep $PULL_TAG | while read -r image; do
             
-            repo_name=$(echo ${image##*/} | cut -d':' -f1)  # Extract repository name
+            repo_name=$OS_REGISTRY_NAMESPACE/$(echo ${image##*/} | cut -d':' -f1)  # Extract repository name
             if ! aws ecr-public describe-repositories --repository-names "$repo_name" --region us-east-1 > /dev/null 2>&1; then
                 echo "Repository $repo_name does not exist. Creating..."
                 aws ecr-public create-repository --repository-name "$repo_name" --region us-east-1
@@ -35,11 +34,11 @@ phases:
                 echo "Repository $repo_name already exists."
             fi
 
-            image_version="$OS_REGISTRY_URL_NAMESPACE/$repo_name"
+            image_version="$OS_REGISTRY_URL/$repo_name"
             docker tag "$image" "$image_version"
             docker push "$image_version"
             
-            image_latest="$OS_REGISTRY_URL_NAMESPACE/$repo_name:latest"
+            image_latest="$OS_REGISTRY_URL/$repo_name:latest"
             docker tag "$image" "$image_latest"
             docker push "$image_latest"
             
