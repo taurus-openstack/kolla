@@ -34,7 +34,7 @@ phases:
                 echo "Repository $repo_name already exists."
             fi
 
-            image_version="$OS_REGISTRY_URL/$repo_name"
+            image_version="$OS_REGISTRY_URL/$repo_name:$PUSH_TAG"
             docker tag "$image" "$image_version"
             docker push "$image_version"
             
